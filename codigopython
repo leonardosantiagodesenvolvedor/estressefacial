@@ -1,0 +1,282 @@
+#Reconhecimento de emoção através de uma Rede Neural Convolucional (CNN)
+
+#Com o código  seguinte, escrito em Python, foi desenvolvido para a implementação de um modelo de reconhecimento de emoções usando uma Rede Neural Convolucional (CNN). O código será explicado em partes, para facilitar o entendimento.
+#Essas bibliotecas foram utilizadas para manipulação de dados (numpy, pandas), visualização (matplotlib), processamento de imagens (cv2), e para construir e treinar modelos de redes neurais (tensorflow, keras).
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import cv2
+import os
+import tensorflow as tf
+from keras import models
+from keras.preprocessing.image import ImageDataGenerator, load_img
+from keras.layers import Conv2D, Dense, BatchNormalization, Activation, Dropout, MaxPooling2D, Flatten
+from tensorflow.keras.optimizers import Adam
+from keras import regularizers
+from keras.callbacks import ModelCheckpoint, CSVLogger, TensorBoard, EarlyStopping, ReduceLROnPlateau
+import datetime
+from tensorflow.keras.utils import plot_model
+from keras.models import Sequential
+
+#Essa função contou o número de imagens em cada classe (ou categoria de emoção) dentro dos diretórios de treino e teste. A função criou um gráfico de barras para visualizar a quantidade de imagens em cada classe.
+def getData(name):  
+    main=os.listdir(f'./data/{name}')
+    dic={}
+    dir=f'./data/{name}'
+    print(main)
+    for i in main:
+        initial_count = 0
+        dirr=os.path.join(dir, i)
+        for path in os.listdir(dirr):
+            if os.path.isfile(os.path.join(dirr, path)):
+                initial_count += 1
+        dic[i]=initial_count
+    courses = list(dic.keys())
+    values = list(dic.values())
+
+    fig = plt.figure(figsize = (10, 5))
+    plt.bar(courses, values, color ='blue',
+            width = 0.5)
+plt.savefig(f'{name}_data_info_face_dataset')
+
+
+#O ImageDataGenerator foi usado para gerar dados de imagem com pré-processamento em tempo real. As imagens foram redimensionadas, escaladas, e algumas transformações como zoom e flip horizontal foram aplicadas para aumentar a robustez do modelo. As imagens foram convertidas para escala de cinza e organizadas em classes categóricas.
+train_datagen = ImageDataGenerator(rescale=1./255,
+                                   zoom_range=0.3,
+                                   horizontal_flip=True)
+
+training_set = train_datagen.flow_from_directory(train_dir,
+                                                batch_size=64,
+                                                target_size=(100,100),
+                                                shuffle=True,
+                                                color_mode='grayscale',
+                                                class_mode='categorical')
+test_datagen = ImageDataGenerator(rescale=1./255)
+test_set = test_datagen.flow_from_directory(test_dir,
+                                                batch_size=64,
+                                                target_size=(100,100),
+                                                shuffle=True,
+                                                color_mode='grayscale',
+                                                class_mode='categorical')
+
+
+#Neste bloco definiu-se a Rede Neural Convolucional (CNN) usando Sequential. A CNN incluiu camadas convolucionais (Conv2D), camadas de pooling (MaxPooling2D), camadas de normalização em lote (BatchNormalization), e camadas de regularização (Dropout). Após as camadas convolucionais, a saída foi achatada (Flatten) e passada por uma ou mais camadas densas (Dense). A última camada teve uma função de ativação softmax para classificação nas classes de emoções.
+def get_model(input_size, classes=7):
+    model = Sequential()   
+    
+    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', activation='relu', input_shape =input_size))
+    model.add(MaxPooling2D(2, 2))
+    model.add(Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same'))
+    model.add(BatchNormalization())
+    model.add(MaxPooling2D(2, 2))
+    model.add(Dropout(0.25))
+
+    model.add(Conv2D(128, kernel_size=(3, 3), activation='relu', padding='same', kernel_regularizer=regularizers.l2(0.01)))
+    model.add(MaxPooling2D(2, 2))
+    model.add(Conv2D(256, kernel_size=(3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.01)))
+    model.add(BatchNormalization())
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    model.add(Flatten())
+    model.add(Dense(1024, activation='relu'))
+    model.add(Dropout(0.5))
+    
+    model.add(Dense(classes, activation='softmax'))
+
+    #Compliling the model
+    model.compile(optimizer=Adam(learning_rate=0.0001, decay=1e-6), 
+                  loss='categorical_crossentropy', 
+                  metrics=['accuracy'])
+    return model
+
+#Treinamento e Avaliação do Modelo
+
+#O modelo foi treinado e avaliado. Ele é treinado por 231 épocas, e os resultados (perda e acurácia) são impressionantes.
+#O modelo final foi salvo para uso posterior.
+my_model = get_model((100,100,1), classes)
+my_model.summary()
+
+steps_per_epoch = training_set.n // training_set.batch_size
+validation_steps = test_set.n // test_set.batch_size
+
+hist = my_model.fit(x=training_set,
+                 validation_data=test_set,
+                 epochs=231,
+                 steps_per_epoch=steps_per_epoch,
+                 validation_steps=validation_steps)
+
+my_model.save('./saved_model/')
+
+train_loss, train_accu = my_model.evaluate(training_set)
+test_loss, test_accu = my_model.evaluate(test_set)
+
+print("final train accuracy = {:.2f} , validation accuracy = {:.2f}".format(train_accu*100, test_accu*100))
+
+#Visualização dos Resultados
+
+#O histórico de treinamento foi usado para criar gráficos de acurácia e perda ao longo das épocas, tanto para os dados de treino quanto para os dados de validação.
+hist = hist.history
+plt.plot(hist["accuracy"])
+plt.plot(hist["val_accuracy"])
+plt.title("Accuracy plot")
+plt.legend(["train","test"])
+plt.xlabel("epoch")
+plt.ylabel("accuracy")
+plt.savefig("emotion_model_accuracy.png")
+
+plt.plot(hist["loss"])
+plt.plot(hist["val_loss"])
+plt.title("Accuracy loss")
+plt.legend(["train","test"])
+plt.xlabel("epoch")
+plt.ylabel("loss")
+plt.savefig("emotion_model_loss.png")
+
+#Matriz de Confusão
+
+#Essa parte do código calculou e plotou uma matriz de confusão para analisar o desempenho do modelo em termos de predição das classes de emoções. A matriz de confusão ajudou a visualizar quais emoções foram confundidas entre si.
+from sklearn.metrics import confusion_matrix
+predictions = my_model.predict(test_set)
+rounded_predictions = np.argmax(predictions, axis=-1)
+test_labels = test_set.labels
+cm = confusion_matrix(y_true=test_labels, y_pred=rounded_predictions)
+
+def plot_confusion_matrix(cm, classes,
+                        normalize=False,
+                        title='Confusion matrix',
+                        cmap=plt.cm.Blues):
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    thresh = cm.max() / 2.
+    for i in range (cm.shape[0]):
+        for j in range (cm.shape[1]):
+            plt.text(j, i, cm[i, j],
+                horizontalalignment="center",
+                color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+cm_plot_labels = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad']
+plot_confusion_matrix(cm=cm, classes=cm_plot_labels, title='Confusion Matrix')
+
+#Conforme realizado na etapa anterior, o código desenvolvido será explicado por etapas para melhor entendimento da metodologia implementada.
+#Este código implementa um sistema de reconhecimento de emoções usando OpenCV e um modelo de deep learning previamente treinado. Vou explicar cada parte do código:
+#Essas bibliotecas são essenciais para manipulação de arrays (numpy), análise de dados (pandas), visualização (matplotlib), manipulação de imagens e vídeos (cv2 - OpenCV), e para construção e treinamento do modelo de deep learning (keras e tensorflow).
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import cv2
+import os
+from keras import models 
+import tensorflow as tf
+from keras.preprocessing.image import ImageDataGenerator, load_img
+from keras.layers import Conv2D, Dense, BatchNormalization, Activation, Dropout, MaxPooling2D, Flatten
+from tensorflow.keras.optimizers import Adam, RMSprop, SGD
+from keras import regularizers
+from keras.callbacks import ModelCheckpoint, CSVLogger, TensorBoard, EarlyStopping, ReduceLROnPlateau
+import datetime
+from tensorflow.keras.utils import plot_model
+from keras.models import Sequential
+
+
+#Previsão de vídeo em tempo real
+
+#Depois de desenvolvermos, implementarmos e testarmos o modelo de rede Neural (CNN) e ter comparado o seu desempenho com as redes encontradas na literatura, a próxima etapa é utilizar uma biblioteca Python, OpenCV para realizar o reconhecimento facial de uma pessoa em tempo real.
+
+#Definindo variáveis para o OpenCV
+
+#A seguir foram definidas algumas variáveis que serão usadas para configuração e personalização da interface gráfica do OpenCV, como a fonte do texto que será exibido na tela, e a cor do retângulo que será desenhado ao redor do texto.
+path = 'haarcascade_frontalface_default.xml'
+font_scale = 1.5
+font = cv2.FONT_HERSHEY_PLAIN
+rectangle_bgr = (255,255,255)
+
+#Criando uma imagem vazia e adicionando texto
+
+Foi criado uma imagem preta de 500x500 pixels e foi adicionado texto usando OpenCV.
+img = np.zeros((500,500))
+text = ""
+(text_width, text_height) = cv2.getTextSize(text, font, fontScale=font_scale, thickness=1)[0]
+text_offset_x = 10
+text_offset_y = img.shape[0] - 25
+box_coords = ((text_offset_x, text_offset_y), (text_offset_x + text_width + 2, text_offset_y - text_height - 2))
+cv2.rectangle(img, box_coords[0], box_coords[1], rectangle_bgr, cv2.FILLED)
+font = cv2.FONT_HERSHEY_SIMPLEX
+org = (50, 50)
+fontScale = 1
+color = (255, 0, 0)
+thickness = 2
+cv2.putText(img, 'OpenCV', org, font, fontScale, color, thickness, cv2.LINE_AA)
+face_roi = None
+
+
+Captura de vídeo e detecção de rosto
+
+#Esta linha de código abriu a webcam para captura de vídeo.
+vid = cv2.VideoCapture(0)
+
+#Em seguida um laço infinito foi iniciado para capturar frames da webcam e convertê-los para escala de cinza. Um classificador Haar Cascade é usado para detectar rostos nos frames capturados.
+while(True):
+    ret, frame = vid.read()
+    faceCascade = cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = faceCascade.detectMultiScale(gray, 1.1, 4)
+
+
+#Processo de reconhecimento de emoções
+
+#Este trecho de código identificou a região do rosto em cada frame, redimensionou essa região para 100x100 pixels, normalizou os valores dos pixels e encaminhou o rosto para o modelo de reconhecimento de emoções, que fez a predição.
+  
+for x, y, w, h in faces:
+        roi_gray = gray[y:y+h, x:x+w]
+        roi_color = gray[y:y+h, x:x+w]
+        cv2.rectangle(gray, (x,y), (x+w, y+h), (255,0,0),2)
+        face_roi = roi_color
+    if(face_roi is not None):
+        image = cv2.resize(face_roi, (100,100))
+        X = np.expand_dims(image, axis = 0)
+        X = X/255
+        images = np.vstack([X])
+
+        val = my_model.predict(images)
+        prediction_value = np.argmax(val[0])
+
+
+#Exibição dos resultados
+
+#Dependendo do valor da predição, foi determinado o status da emoção detectada, que foi exibido na tela juntamente com o vídeo capturado.
+if(prediction_value == 0):
+            status = "Angry"
+            # Código para exibir texto e desenhar retângulos na tela...
+        elif (prediction_value == 1):
+            status = "Disgust"
+            # Código para exibir texto e desenhar retângulos na tela...
+        # Outras emoções...
+    cv2.imshow('Face Emotion Recognition', gray)
+
+
+#Finalização do processo
+
+#O código abaixo finaliza a captura de vídeo e fecha todas as janelas do OpenCV ao pressionar a tecla 'q'.
+      if(cv2.waitKey(2) & 0xFF == ord('q')):
+        break
+vid.release()
+cv2.destroyAllWindows()
+
