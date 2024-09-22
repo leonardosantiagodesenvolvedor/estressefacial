@@ -1,17 +1,17 @@
 # estressefacial
-UNIVERSIDADE FEDERAL DE SANTA CATARINA
-Departamento de Ciência da Informação
-Programa de Pós-Graduação em Ciência da Informação
+UNIVERSIDADE FEDERAL DE SANTA CATARINA <br/>
+Departamento de Ciência da Informação <br/>
+Programa de Pós-Graduação em Ciência da Informação <br/>
 MINTER 21 – UFSC – PF
 
 # Viabilidade do Reconhecimento de Estresse Facial para Identificação de Traficantes no Sistema Aéreo Privado Brasileiro.  
 
-LEONARDO SANTIAGO MELGAÇO SILVA
+LEONARDO SANTIAGO MELGAÇO SILVA <br/>
 leonardo.lsms@pf.gov.br
 
-Dissertação de Mestrado apresentada como requisito para obtenção do título de Mestre em Ciência da Informação pela Universidade Federal de Santa Catarina.
-Área de pesquisa: Dados, Inteligência e Tecnologia
-Orientador: Prof. Dr. Gustavo Medeiros de Araújo
+Dissertação de Mestrado apresentada como requisito para obtenção do título de Mestre em Ciência da Informação pela Universidade Federal de Santa Catarina. <br/>
+Área de pesquisa: Dados, Inteligência e Tecnologia <br/>
+Orientador: Prof. Dr. Gustavo Medeiros de Araújo <br/>
 
 # RESUMO
 
