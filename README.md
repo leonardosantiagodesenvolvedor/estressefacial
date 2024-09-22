@@ -1,10 +1,10 @@
 # estressefacial
-UNIVERSIDADE FEDERAL DE SANTA CATARINA <br/>
-Departamento de Ciência da Informação <br/>
-Programa de Pós-Graduação em Ciência da Informação <br/>
-MINTER 21 – UFSC – PF
+<p align="center">UNIVERSIDADE FEDERAL DE SANTA CATARINA</p>
+<p align="center">Departamento de Ciência da Informação </p>
+<p align="center">Programa de Pós-Graduação em Ciência da Informação</p>
+<p align="center">MINTER 21 – UFSC – PF </p>
 
-# Viabilidade do Reconhecimento de Estresse Facial para Identificação de Traficantes no Sistema Aéreo Privado Brasileiro.  
+# <p align="center">  Viabilidade do Reconhecimento de Estresse Facial para Identificação de Traficantes no Sistema Aéreo Privado Brasileiro.  </p>
 
 LEONARDO SANTIAGO MELGAÇO SILVA <br/>
 leonardo.lsms@pf.gov.br
